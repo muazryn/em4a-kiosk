@@ -2,10 +2,14 @@
 name: Deploy static content to Pages
 
 on:
+  # Runs on pushes targeting the main or master branches
   push:
     branches: ["main", "master"]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -28,8 +32,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 20 # 👈 Fixed: Removed 'cache: npm' so it doesn't crash on missing lockfiles!
 
       - name: Install dependencies
         run: |
@@ -48,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './dist' # Vite builds static output to the 'dist' folder
 
       - name: Deploy to GitHub Pages
         id: deployment
