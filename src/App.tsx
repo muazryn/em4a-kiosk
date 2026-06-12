@@ -12,6 +12,20 @@ export default function App() {
   // Master state carrying standard quiz questions
   const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions);
   const [activeTab, setActiveTab] = useState<"exporter" | "educator">("exporter");
+  const [isPresentation, setIsPresentation] = useState<boolean>(false);
+  const [isBorderless, setIsBorderless] = useState<boolean>(false);
+
+  // Monitor Escape key to safely exit presentation mode
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsPresentation(false);
+        setIsBorderless(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Handler to update a question in state
   const handleUpdateQuestion = (updatedQuestion: QuizQuestion) => {
@@ -28,6 +42,56 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-650 selection:text-white">
       
+      {/* FULLSCREEN KIOSK PRESENTATION OVERLAY */}
+      {isPresentation && (
+        <div className="fixed inset-0 z-50 w-screen h-screen bg-slate-950 flex flex-col items-center justify-center overflow-hidden p-0">
+          
+          {/* Floating HUD Controller */}
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-2 rounded-xl shadow-2xl hover:border-indigo-500/55 transition-all group">
+            <span className="text-[10px] font-mono tracking-wider text-slate-400 group-hover:text-indigo-400 font-semibold px-2">
+              PRESENTER CONSOLE:
+            </span>
+            <button
+              id="presentation_toggle_bezel"
+              onClick={() => setIsBorderless(!isBorderless)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
+                isBorderless 
+                  ? "bg-slate-100 text-slate-950 shadow-md font-extrabold" 
+                  : "bg-slate-850 text-slate-300 hover:text-slate-100 hover:bg-slate-700"
+              }`}
+              title="Toggle between physical hardware bezel frame simulation and edge-to-edge borderless app screen"
+            >
+              ⚙️ {isBorderless ? "Show Cabinet Bezel" : "Borderless Screen Mode"}
+            </button>
+            <button
+              id="presentation_exit_btn"
+              onClick={() => {
+                setIsPresentation(false);
+                setIsBorderless(false);
+              }}
+              className="flex items-center gap-1 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-[11px] px-3.5 py-1.5 rounded-lg shadow-md cursor-pointer active:scale-95 transition-all"
+              title="Return to simulator dashboard (Shortcut: ESC)"
+            >
+              ✕ Exit Presentation (ESC)
+            </button>
+          </div>
+
+          {/* Mounted Active Kiosk (stretched to fill if borderless) */}
+          <div className={`${isBorderless ? "w-screen h-screen" : "w-full max-w-[1200px] aspect-[16/9] p-4"} flex flex-col justify-center items-center transition-all duration-300`}>
+            <KioskSimulator 
+              questions={questions} 
+              onResetQuestions={handleResetQuestions} 
+              isPresentation={true}
+              isBorderless={isBorderless}
+              onExitPresentation={() => {
+                setIsPresentation(false);
+                setIsBorderless(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* GLOBAL BANNER HEADER */}
       <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -89,6 +153,7 @@ export default function App() {
           <KioskSimulator 
             questions={questions} 
             onResetQuestions={handleResetQuestions} 
+            onToggleFullscreen={() => setIsPresentation(true)}
           />
           
           {/* Hardware Specs Footnote */}
